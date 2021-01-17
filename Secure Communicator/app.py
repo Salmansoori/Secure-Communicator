@@ -47,11 +47,9 @@ def login():
     successful = "Login successful"
     if request.method == "POST":
         email = request.form['email']
-        # if not check_email(email):
-        #     # do not proceed to login
         password = request.form['password']
-        # if not check_pass(password):
-        #     # do not proceed to login
+        if not check_email(email) or not check_pass(password):
+            return render_template("login.html", us=unsuccessful)
         try:
             auth.sign_in_with_email_and_password(email, password)
             return render_template("login.html", s=successful)
@@ -71,7 +69,8 @@ def register():
         email = request.form['email']
         password = request.form['password']
         confirm_password = request.form['confirm_password']
-        if password != confirm_password:
+
+        if password != confirm_password or not check_email(email) or not check_pass(password):
             return render_template("register.html", us=unsuccessful)
         else:
             user = auth.create_user_with_email_and_password(email, password)
