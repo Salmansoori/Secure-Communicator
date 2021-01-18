@@ -15,7 +15,6 @@ class AESCipher:
 
     def encrypt(self, raw):
         raw = pad(raw)
-        print(raw)
         iv = Random.new().read(AES.block_size)
         cipher_text = AES.new(self.key, AES.MODE_CBC, iv)
         return base64.b64encode(iv + cipher_text.encrypt(raw))
@@ -35,14 +34,20 @@ def hasher(k):
     return hex_dig
 
 
+# secret key
 key = "akhil archit salman mradima"
 key_hash = hasher(key)
 
-message = "Hello its encrypted"
 
-cipher = AESCipher(key_hash)
-encrypted = cipher.encrypt(message)
-decrypted = cipher.decrypt(encrypted)
+def do_encrypt(message):
+    cipher = AESCipher(key_hash)
+    encrypted = cipher.encrypt(message)
 
-print(encrypted)
-print(decrypted)
+    return encrypted
+
+
+def do_decrypt(encrypted):
+    cipher = AESCipher(key_hash)
+    message = cipher.decrypt(encrypted)
+
+    return message
