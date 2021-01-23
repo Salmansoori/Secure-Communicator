@@ -1,0 +1,10 @@
+{% extends 'layout.html' %}
+
+{% block body %}
+<div>
+    <h2>Please hold a minute to capture photo then click on save and goback button</h2>
+    <img id="frame" src="{{ url_for('video_feed') }}">   
+    <a href="{{ url_for('index') }}"><button id="button" type="submit" class="btn btn-primary">capture and save</button></a>
+</div>    
+
+{% endblock %}
