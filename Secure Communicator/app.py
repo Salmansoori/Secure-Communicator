@@ -33,6 +33,16 @@ app=Flask(__name__)
 
 
 
+def upload(file_name):
+    blob = bucket.blob(file_name)
+    blob.upload_from_filename(file_name)
+    blob.make_public()
+    print(blob.public_url)
+    return True
+    #return update_database(name, email, image_url)
+
+
+
 # def update_database():
 
     # run encoding function
