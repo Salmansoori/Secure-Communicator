@@ -1,7 +1,11 @@
+
+import numpy as np
 from flask import Flask, render_template, redirect, request, url_for, Response, session
 import pyrebase
 from user_input_filter import *
 import cv2
+import requests
+from backend import *
 import firebase_admin
 from firebase_admin import credentials, firestore, storage
 
@@ -41,6 +45,84 @@ bucket = storage.bucket()
 app = Flask(__name__)
 
 
+def face_verification(json_data, new_url):
+    # Encoding loaded
+    res = requests.get(json_data['enc_url'])
+    data = pickle.loads(res.content)
+
+    # Image Loaded
+    resp = requests.get(new_url, stream=True).raw
+    image = np.asarray(bytearray(resp.read()), dtype="uint8")
+    image = cv2.imdecode(image, cv2.IMREAD_COLOR)
+    rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    try:
+        encodings = face_recognition.face_encodings(rgb)[0]
+        matches = face_recognition.compare_faces(data, encodings)
+        return matches[0]
+    except:
+        return False
+
+
+@app.route('/verification')
+def verification():
+    token = session['user']
+    data = auth.get_account_info(token)
+    email = data['users'][0]['email']
+
+    user_data = firestore_db.collection('UserData').document(email).get().to_dict()
+    # enc_url = user_data['enc_url']
+    return Response(generate(user_data), mimetype='multipart/x-mixed-replace;boundary=frame')
+
+
+def generate(json_data):
+    i = 0
+    video = cv2.VideoCapture(0)
+    file_name = str(json_data['email']) + 'temp.jpg'
+    while True:
+        i += 1
+        success, image = video.read()
+        ret, jpeg = cv2.imencode('.jpg', image)
+        frame = jpeg.tobytes()
+        yield (b'--frame\r\n'
+               b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n\r\n')
+        if i >= 80:
+            video.release()
+            cv2.destroyAllWindows()
+            cv2.imwrite(file_name, image)
+            # face_encoding_update(image)
+            # return 0
+            return upload_temp(file_name, json_data)
+
+
+def upload_temp(file_name, json_data):
+    blob = bucket.blob(file_name)
+    blob.upload_from_filename(file_name)
+    blob.make_public()
+    new_url = blob.public_url
+    print(new_url, "new_url")
+    verified = face_verification(json_data, new_url)
+    if not verified:
+        print("NO access")
+    else:
+        print("face verified")
+
+
+def face_encoding_update(url):
+    resp = requests.get(url, stream=True).raw
+    image = np.asarray(bytearray(resp.read()), dtype="uint8")
+    image = cv2.imdecode(image, cv2.IMREAD_COLOR)
+    known_encodings = []
+    rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    # Use face_recognition to locate faces
+    boxes = face_recognition.face_locations(rgb, model='hog')
+
+    # Computing facial encoding
+    encodings = face_recognition.face_encodings(rgb, boxes)
+    for encoding in encodings:
+        known_encodings.append(encoding)
+    return known_encodings
+
+
 @app.route('/capture_image')
 def capture_image():
     return render_template("capture.html")
@@ -50,13 +132,22 @@ def upload(file_name, json_data):
     blob = bucket.blob(file_name)
     blob.upload_from_filename(file_name)
     blob.make_public()
-    # print(blob.public_url)
     json_data['ImageURL'] = blob.public_url
-
     return update_database(json_data)
 
 
 def update_database(json_data):
+    enc_data = face_encoding_update(json_data['ImageURL'])
+    file_name = str(json_data['email']) + ".txt"
+    f = open(file_name, "wb")
+    f.write(pickle.dumps(enc_data))
+    f.close()
+
+    blob = bucket.blob(file_name)
+    blob.upload_from_filename(file_name)
+    blob.make_public()
+    json_data['enc_url'] = blob.public_url
+
     print(json_data)
     firestore_db.collection(u'UserData').document(json_data['email']).set(json_data)
     print("Registration Successful")
@@ -93,7 +184,8 @@ def gen(json_data):
             video.release()
             cv2.destroyAllWindows()
             cv2.imwrite(file_name, image)
-
+            # face_encoding_update(image)
+            # return 0
             return upload(file_name, json_data)
 
 
@@ -144,16 +236,20 @@ def login():
             session['user'] = sign_user['idToken']
 
             user_data = firestore_db.collection('UserData').document(email).get().to_dict()
-            print(user_data)    # {email, user, ImageURL}
+            print(user_data)    # {email, user, ImageURL, enc_url}
 
-            # FACE VERIFICATION
+            return render_template('verify.html', )
 
-            # if face_verify(user_data['ImageURL']):
+            # new_url = ""
+            #
+            # # FACE VERIFICATION
+            #
+            # if face_verification(json_data=user_data, new_url=new_url):
             #     return render_template("login.html", s=successful)
             #     # return redirect(url_for('.video_feed', message=json_data))
             # else:
             #     return render_template('login.html', us=unsuccessful)
-            return render_template('login.html', s=successful)
+            # # return render_template('login.html', s=successful)
 
         except:
             return render_template("login.html", us=unsuccessful)
@@ -175,16 +271,19 @@ def register():
         if password != confirm_password:  # or not check_email(email) or not check_pass(password):
             return render_template("register.html", us=unsuccessful)
         else:
-            user = auth.create_user_with_email_and_password(email, password)
-            session['user'] = user['idToken']
-            # token = session['user']
-            # data = auth.get_account_info(token)
-            # json_data = {
-            #     'email': data['users'][0]['email'],
-            #     'ImageURL': '',
-            #     'user': name
-            # }
-            return render_template("capture.html", s=successful, username=name)
+            try:
+                user = auth.create_user_with_email_and_password(email, password)
+                session['user'] = user['idToken']
+                # token = session['user']
+                # data = auth.get_account_info(token)
+                # json_data = {
+                #     'email': data['users'][0]['email'],
+                #     'ImageURL': '',
+                #     'user': name
+                # }
+                return render_template("capture.html", s=successful, username=name)
+            except:
+                return render_template('register.html', un=unsuccessful)
 
     return render_template("register.html")
 
