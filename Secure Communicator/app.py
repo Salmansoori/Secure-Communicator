@@ -274,7 +274,43 @@ def register():
 
     return render_template("register.html")
 
-#def chatrooms():
+
+@app.route("/chatroom/")
+def chatroom():
+#    if user in session:
+#        if request.method=="POST":
+        #    txt_body=request.form['text_body']
+            from=user['email']
+
+            # send the messages 
+            msg ={ 'from' : '' ,
+                    'Time':"",
+                    'message': txt_body,
+                    'To': ''
+                }
+            firestore_db.collection('messages').document(To).add(msg)
+
+
+            all_user=firestore_db.collection('UserData').get()
+            users=[]
+            for i in all_user:
+                users.append( {'user': i.to_dict()['user'] , 'email': i.to_dict()['email'] })
+            print(users)    
+            return render_template("chats_room.html",users=users)
+#    else:
+#        return render_template("login.html")    
+
+
+
+@app.route('/chats', methods=['GET', 'POST'])
+def chats():
+    if user in session:
+        id = session['lid']
+        uid = session['uid']
+        # Get message
+        
+        return render_template('chats.html', chats=chats,)
+    return redirect(url_for('login'))   
 
 
 
