@@ -1,0 +1,62 @@
+{% extends 'layout.html' %}
+{% block body %}
+<!--
+<script>
+    function ajax(){
+
+    var req = new XMLHttpRequest();
+    req.onreadystatechange = function(){
+    if(req.readyState == 4 && req.status == 200)
+    {
+    document.getElementById('chats').innerHTML = req.responseText;
+    }
+    }
+    req.open('POST', '/chats', true);
+    req.send();
+    }
+    setInterval(function(){ajax()}, 10);
+</script> -->
+<div class="row" onload="ajax();">
+    <div class="col-xs-1"></div>
+    <div class="col-xs-4" style="background-color: #f5f5f5;margin: 0px 10px;border-radius: 4px; padding: 10px 20px 20px 20px;">
+        <div style="text-align: center;font-size: 18px;background-color: #ddd;border-radius: 4px;color: #5e5fa4;margin-bottom: 8px;">
+            <span>Friends list</span>
+        </div>
+        <ul class="list-group">
+            {% for user in users %}
+                    <li class="list-group-item"><a href="{{user}}"> {{user['user']}} </a>
+                        {% if user.online != "0" %}
+                            <span style="height: 12px;width: 12px;background-color: #1fc124;border-radius: 6px;
+                            float: right;margin-top: 5px;"></span>
+                        {% else %}
+                            <span style="height: 12px;width: 12px;background-color: #8a8a8a;border-radius: 6px;
+                            float: right;margin-top: 5px;"></span>
+                        {% endif %}
+                    </li>
+            {% endfor %}
+        </ul>
+    </div>
+    <div class="col-xs-6" style="background-color: #f5f5f5;margin: 0px 10px;border-radius: 4px; padding: 10px 20px 20px 20px;">
+                <div style="text-align: center;font-size: 18px; color: #22aa45;background-color: #ddd;border-radius: 4px;">
+                    <span>{{ username}} username </span>
+                </div>
+                <div id="chat-box" style="overflow-y: scroll; height: 350px; padding: 10px 0px 0px 0px;">
+                    <div id="chats"></div>
+                </div>
+                <div>
+                    <form method="POST" action="">
+                    <div class="form-group">
+                        <input type="text" class="form-control" name="text_body" id="exampleInputEmail1" aria-describedby="usernameHelp" placeholder="Enter your text ">
+                    </div>
+                    <button type="submit" class="btn btn-primary pull-right">Send</button>
+                    </form>
+                </div>
+                <div style="text-align: center;">
+                    <h1>Welcome to Chat Room</h1>
+                    <p class="lead">Select users and start chat...</p>
+                </div>
+
+    </div>
+    <div class="col-xs-1"></div>
+</div>
+{% endblock %}
