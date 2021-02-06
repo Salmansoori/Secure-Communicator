@@ -3,15 +3,15 @@
 {% block body %}
 <br>
 <div class="jumbotron text-center">
-    {% if session.logged_in == NULL%}
+    {% if not session['is_login']  %}
         <h1>Welcome to Secure Communicator</h1>
         <p class="lead">This is a Secure Encrypted Chat App which build in Python Flask framework</p>
         <a href="/register" class="btn btn-primary btn-lg">Sign Up</a>
         <a href="/login" class="btn btn-success btn-lg">Login</a>
     {% else %}
-        <h1>Hi {{ session.s_name }}</h1>
+        <h1>Hi {{username}}</h1>
         <p class="lead">This is first SSL Chat App which build in Python Flask framework.<br> Hope you get interested this app.</p>
-        <a href="/chatting/{{ session.uid }}" class="btn btn-primary btn-lg">Let's Start Chat</a>
+        <a href="/chatroom/{{ session['user_id'] }}" class="btn btn-primary btn-lg">Let's Start Chat</a>
     {% endif %}
 </div>
 {% endblock %}
