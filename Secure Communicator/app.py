@@ -102,7 +102,7 @@ def upload_temp(file_name, json_data):
 
     new_url = blob.public_url
     verified = face_verification(json_data, new_url)
-    # print(verified)
+    print(verified)
     return verified
 
 
@@ -111,7 +111,7 @@ def profile():
     if not check_login():
         return render_template("unauthorize.html")
     session['is_login'] = str(verified)
-    # print(session['is_login'])
+
     token = session['user']
     data = auth.get_account_info(token)
     email = data['users'][0]['email']
@@ -185,8 +185,8 @@ def generate_video(json_data):
 
 @app.route('/videocamera')
 def video_feed():
-    name = request.args['username']
     try:
+        name = request.args['username']
         token = session['user']
     except KeyError:
         return render_template('unauthorize.html')
