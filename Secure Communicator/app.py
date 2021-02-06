@@ -363,7 +363,7 @@ def chatroom(email):
 @app.route('/chats', methods=['GET', 'POST'])
 def chats():
     if 'user_id' in session:
-        to = session['to']
+        to = session['receiver_id']
 
         token = session['user']
         data = auth.get_account_info(token)
