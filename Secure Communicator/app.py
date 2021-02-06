@@ -114,16 +114,18 @@ def upload_temp(file_name, json_data):
 #        return True
 
 
-@app.route("/after_login")
-def after_login():
-    temp=True
+@app.route("/profile")
+def profile():
+
+    session['is_login'] = str(verified)
+    #print(session['is_login'])
     token = session['user']
     data = auth.get_account_info(token)
     email = data['users'][0]['email']
     json_data = firestore_db.collection('UserData').document(email).get().to_dict()
 
     username = json_data['user']
-    return render_template("home.html", v=temp, username=username)
+    return render_template("home.html",  username=username)
 
 
 
@@ -316,38 +318,45 @@ def register():
 
 @app.route("/chatroom/<string:email>", methods=['POST','GET'])
 def chatroom(email):
-   # if user_id in session:
-            token = session['user']
-            data = auth.get_account_info(token)
-            my_email = data['users'][0]['email']
+    if 'user_id' in session:
+        token = session['user']
+        data = auth.get_account_info(token)
+        my_email = data['users'][0]['email']
 
-            session['to']=email
-#            print(my_email)
-#            to = email
-#            print(to)
-            if request.method=="POST":
-                txt_body=request.form['text_body']
-                tz_India = pytz.timezone('Asia/Kolkata') 
-                datetime_India = datetime.now(tz_India)
-#                print("India time:", datetime_India.strftime("%Y-%m-%d %H:%M:%S"))
-                timestamp=datetime_India.strftime("%Y-%m-%d %H:%M:%S")
-                # send the messages 
-                msg ={ 'from' : my_email ,
-                    'Time':timestamp,
-                    'message': txt_body,
-                    'to': email
+        session['receiver_id'] = email
+        to=email
+        receiver_data=firestore_db.collection('UserData').document(to).get()
+#        print(receiver_data.to_dict())
+        session['receiver_name']= receiver_data.to_dict()['user']
+
+
+        if request.method=="POST":
+
+            txt_body=request.form['text_body']
+
+            tz_India = pytz.timezone('Asia/Kolkata') 
+            datetime_India = datetime.now(tz_India)
+#           print("India time:", datetime_India.strftime("%Y-%m-%d %H:%M:%S"))
+            timestamp=datetime_India.strftime("%Y-%m-%d %H:%M:%S")
+        
+#           send the messages to receiver
+            msg ={ 'from' : my_email ,
+                   'Time':timestamp,
+                   'message': txt_body,
+                   'to': email
                 }
-                firestore_db.collection('messages').add(msg)
+            firestore_db.collection('messages').add(msg)
 
+#       get all user 
 
-            all_user=firestore_db.collection('UserData').get()
-            users=[]
-            for i in all_user:
-                users.append( {'user': i.to_dict()['user'] , 'email': i.to_dict()['email'] })
-#            print(users)    
-            return render_template("chats_room.html",users=users)
-#    else:
-#        return render_template("login.html")    
+        all_user=firestore_db.collection('UserData').get()
+        users=[]
+        for i in all_user:
+            users.append( {'user': i.to_dict()['user'] , 'email': i.to_dict()['email'] })
+#       print(users)    
+        return render_template("chats_room.html",users=users)
+
+    return render_template("login.html")    
 
 
 
@@ -355,16 +364,15 @@ def chatroom(email):
 def chats():
     if 'user_id' in session:
         to = session['to']
-#        print(to)
+
         token = session['user']
         data = auth.get_account_info(token)
         my_email = data['users'][0]['email']
-#        uid = session['uid']
-        # Get message
-        #email="sangam@gmail.com"
-#        print(session)
-#        print(session['user_id'])
+
+        # Get the all messages
+
         all_chats=firestore_db.collection('messages').get()
+
         chats=[]
         for i in all_chats:
             if (i.to_dict()['to'] == to  and i.to_dict()['from']==my_email) or (i.to_dict()['from'] == to  and i.to_dict()['to']==my_email) :
@@ -373,11 +381,8 @@ def chats():
         chats=sorted(chats, key = lambda x: datetime.strptime(x['Time'], "%Y-%m-%d %H:%M:%S"))
 #       print(chats)
 
-#       for i in chats:
-#            print(i.to_dict())
         return render_template('chats.html', chats=chats, my_email=my_email )
-    return redirect(url_for('login'))    
-
+    return redirect(url_for('login')) 
 
 if __name__ == "__main__":
     app.run(debug=True)
