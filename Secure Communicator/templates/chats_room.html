@@ -39,28 +39,30 @@
         </ul>
     </div>
     <div class="col-xs-6" style="background-color: #f5f5f5;margin: 0px 10px;border-radius: 4px; padding: 10px 20px 20px 20px;">
-        {% if session['to'] %}
-        <div style="text-align: center;font-size: 18px; color: #22aa45;background-color: #ddd;border-radius: 4px;">
-            <span>{{ session['to'][0:7]}}</span>
-        </div>
-        <div id="chat-box" style="overflow-y: scroll; height: 350px; padding: 10px 0px 0px 0px;">
-            <div id="chats"></div>
-        </div>
-       <!-- {% from "includes/_formhelpers.html" import render_field %} -->
-        <div>
-            <form method="POST" action="">
-            <div class="form-group">
-                <input type="text" class="form-control" name="text_body" id="exampleInputEmail1" aria-describedby="usernameHelp" placeholder="Enter your test ...">
+    {% if 'receiver_id' in session %}
+        {% if session['receiver_id'] != session['user_id'] %}
+            <div style="text-align: center;font-size: 18px; color: #22aa45;background-color: #ddd;border-radius: 4px;">
+                <span>{{ session['receiver_name']}}</span>
             </div>
-            <button type="submit" class="btn btn-primary pull-right">Send</button>
-            </form>
-        </div>
+            <div id="chat-box" style="overflow-y: scroll; height: 350px; padding: 10px 0px 0px 0px;">
+            <div id="chats"></div>
+            </div>
+            <!-- {% from "includes/_formhelpers.html" import render_field %} -->
+            <div>
+                <form method="POST" action="">
+                <div class="form-group">
+                    <input type="text" class="form-control" name="text_body" id="exampleInputEmail1" aria-describedby="usernameHelp" placeholder="Enter your test ...">
+                </div>
+                <button type="submit" class="btn btn-primary pull-right">Send</button>
+                </form>
+            </div>
         {% else %}
-        <div style="text-align: center;">
-            <h1>Welcome to Chat Room</h1>
-            <p class="lead">Select users and start chat...</p>
-        </div>
+            <div style="text-align: center;">
+                <h1>Welcome to Chat Room</h1>
+                <p class="lead">Select users and start chat...</p>
+            </div>
         {% endif %}
+    {%endif %}    
         
     </div>
     <div class="col-xs-1"></div>
