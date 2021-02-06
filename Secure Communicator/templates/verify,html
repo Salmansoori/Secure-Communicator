@@ -4,7 +4,7 @@
 <div>
     <h2>Please hold a minute to capture image then click on save and goback button</h2>
     <img id="frame" src="{{ url_for('verification') }}">
-    <a href="{{ url_for('after_login') }}"><button id="button" type="submit" class="btn btn-primary">click here to verify</button></a>
+    <a href="{{ url_for('profile') }}"><button id="button" type="submit" class="btn btn-primary">click here to verify</button></a>
 </div>    
 
 {% endblock %}
