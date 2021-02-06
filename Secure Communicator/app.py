@@ -6,7 +6,9 @@ from encryption import do_encrypt, do_decrypt
 import requests
 from datetime import datetime
 import pytz
-from backend import *
+import cv2
+import face_recognition
+import pickle
 import firebase_admin
 from firebase_admin import credentials, firestore, storage
 
