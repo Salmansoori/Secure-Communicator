@@ -58,9 +58,9 @@
         </button>
         <div class="collapse navbar-collapse" id="navbarNavAltMarkup">
           <div class="navbar-nav">
-          {% if v %}  
+          {% if session['is_login'] %}  
             <a class="nav-item nav-link active" href="/home">Home <span class="sr-only">(current)</span></a>
-            <a class="nav-item nav-link" href="{{ url_for('chats') }}">Chatroom</a>
+            <a class="nav-item nav-link" href="/chatroom/{{ session['user_id'] }}">Chatroom</a>
             <a class="nav-item nav-link" href="{{ url_for('logout') }}">Logout</a>
           {% else %}  
             <a class="nav-item nav-link active" href="/home">Home <span class="sr-only">(current)</span></a>
