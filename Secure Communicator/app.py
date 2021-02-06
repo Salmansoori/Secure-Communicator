@@ -1,59 +1,66 @@
 import numpy as np
-from flask import Flask, flash, render_template, redirect, request, url_for, Response, session
+from flask import Flask, render_template, redirect, request, url_for, Response, session
 import pyrebase
 from user_input_filter import *
-import cv2
+from encryption import do_encrypt, do_decrypt
 import requests
-from datetime import datetime 
+from datetime import datetime
 import pytz
 from backend import *
 import firebase_admin
 from firebase_admin import credentials, firestore, storage
 
 config = {
-  "apiKey": "secret key",
-  "authDomain": " ",
-  "databaseURL": " ",
-  "projectId": " ",
-  "storageBucket": " ",
-  "messagingSenderId": " ",
-  "appId": " ",
-  "measurementId": " "
+    "apiKey": "AIzaSyAC8zIhZqHSkWaMOBqOXNopxdS4cP9WXh0",
+    "authDomain": "encryp-chat-8568c.firebaseapp.com",
+    "databaseURL": "https://encryp-chat-8568c-default-rtdb.firebaseio.com/",
+    "projectId": "encryp-chat-8568c",
+    "storageBucket": "encryp-chat-8568c.appspot.com",
+    "messagingSenderId": "957818347815",
+    "appId": "1:957818347815:web:8c6e4bb000a52b78af4902"
 }
-firebase = pyrebase.initialize_app(config)  
-db=firebase.database()
+
+firebase = pyrebase.initialize_app(config)
+db = firebase.database()
 auth = firebase.auth()
 
-
-cred = credentials.Certificate(r'json file path')
+cred = credentials.Certificate(r'C:\Users\ASUS\Desktop\Secure-Communicator\Secure Communicator\secret_key.json')
 firebase_admin.initialize_app(cred, {
-    'storageBucket': 'your storageBucket url'
+    'storageBucket': 'encryp-chat-8568c.appspot.com'
 })
 
 firestore_db = firestore.client()
 bucket = storage.bucket()
 
-
 video = cv2.VideoCapture(0)
-app=Flask(__name__)
+app = Flask(__name__)
 
-verified=False
+verified = False
+
+
+def check_login():
+    if "user_id" in session and "user" in session:
+        return True
+    else:
+        return False
+
 
 def face_verification(json_data, new_url):
     # Encoding loaded
-    res = requests.get(json_data['enc_url'])
-    data = pickle.loads(res.content)
-
-    # Image Loaded
-    resp = requests.get(new_url, stream=True).raw
-    image = np.asarray(bytearray(resp.read()), dtype="uint8")
-    image = cv2.imdecode(image, cv2.IMREAD_COLOR)
-    rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     try:
+        res = requests.get(json_data['enc_url'])
+        data = pickle.loads(res.content)
+
+        # Image Loaded
+        resp = requests.get(new_url, stream=True).raw
+        image = np.asarray(bytearray(resp.read()), dtype="uint8")
+        image = cv2.imdecode(image, cv2.IMREAD_COLOR)
+        rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+
         encodings = face_recognition.face_encodings(rgb)[0]
         matches = face_recognition.compare_faces(data, encodings)
         return matches[0]
-    except:
+    except KeyError:
         return False
 
 
@@ -64,9 +71,8 @@ def verification():
     email = data['users'][0]['email']
 
     user_data = firestore_db.collection('UserData').document(email).get().to_dict()
-    # enc_url = user_data['enc_url']
-    return Response(generate(user_data), mimetype='multipart/x-mixed-replace;boundary=frame')
 
+    return Response(generate(user_data), mimetype='multipart/x-mixed-replace;boundary=frame')
 
 
 def generate(json_data):
@@ -84,10 +90,8 @@ def generate(json_data):
             video.release()
             cv2.destroyAllWindows()
             cv2.imwrite(file_name, image)
-            # face_encoding_update(image)
-            # return 0
-            return upload_temp(file_name, json_data)   
 
+            return upload_temp(file_name, json_data)
 
 
 def upload_temp(file_name, json_data):
@@ -95,38 +99,26 @@ def upload_temp(file_name, json_data):
     blob = bucket.blob(file_name)
     blob.upload_from_filename(file_name)
     blob.make_public()
-    new_url = blob.public_url
-    print(new_url, "new_url")
-    verified = face_verification(json_data, new_url)
-    print(verified)
-    return verified
-#    if not verified:
-        #value=False
-        #return redirect(url_for("error",verify=verify))
-#        print("NO access")
-#        return False
 
-        
-#    else:
-        #value=True
-#       return redirect(url_for("error",verify=verify))
-#        print("face verified")
-#        return True
+    new_url = blob.public_url
+    verified = face_verification(json_data, new_url)
+    # print(verified)
+    return verified
 
 
 @app.route("/profile")
 def profile():
-
+    if not check_login():
+        return render_template("unauthorize.html")
     session['is_login'] = str(verified)
-    #print(session['is_login'])
+    # print(session['is_login'])
     token = session['user']
     data = auth.get_account_info(token)
     email = data['users'][0]['email']
     json_data = firestore_db.collection('UserData').document(email).get().to_dict()
 
     username = json_data['user']
-    return render_template("home.html",  username=username)
-
+    return render_template("home.html", username=username)
 
 
 def face_encoding_update(url):
@@ -143,11 +135,6 @@ def face_encoding_update(url):
     for encoding in encodings:
         known_encodings.append(encoding)
     return known_encodings
-
-
-@app.route('/capture_image')
-def capture_image():
-    return render_template("capture.html", username=name)
 
 
 def upload(file_name, json_data):
@@ -168,30 +155,16 @@ def update_database(json_data):
     blob = bucket.blob(file_name)
     blob.upload_from_filename(file_name)
     blob.make_public()
-    json_data['enc_url'] = blob.public_url
 
-    print(json_data)
+    json_data['enc_url'] = blob.public_url
     firestore_db.collection(u'UserData').document(json_data['email']).set(json_data)
+
     print("Registration Successful")
+
     return 0
 
 
-# def get():
-#     print("*" * 50)
-#     data = firestore_db.collection('UserData').get()
-#     for i in data:
-#         print(i.to_dict())
-#     print("*" * 50)
-#     return app.add_url_rule('/login', redirect_to=url_for('static', filename='templates/login.html'))
-#     # return redirect(url_for('.login'))
-#
-#     # @app.route('/add_data')
-#     # def add(email, user, ImageURL):
-#     #     firestore_db.collection(u'songs').add({'email': email, 'user': user, 'ImageURL': ImageURL})
-#     #     return True
-
-
-def gen(json_data):
+def generate_video(json_data):
     i = 0
     video = cv2.VideoCapture(0)
     file_name = str(json_data['email']) + '.jpg'
@@ -206,32 +179,24 @@ def gen(json_data):
             video.release()
             cv2.destroyAllWindows()
             cv2.imwrite(file_name, image)
-            # face_encoding_update(image)
-            # return 0
+
             return upload(file_name, json_data)
 
 
 @app.route('/videocamera')
 def video_feed():
     name = request.args['username']
-    # name = "test"
-    token = session['user']
+    try:
+        token = session['user']
+    except KeyError:
+        return render_template('unauthorize.html')
     data = auth.get_account_info(token)
-
     json_data = {
         'email': data['users'][0]['email'],
         'ImageURL': '',
         'user': name,
     }
-    return Response(gen(json_data), mimetype='multipart/x-mixed-replace;boundary=frame')
-
-
-@app.route('/user_info')
-def user_info():
-    token = session['user']
-    user = auth.get_account_info(token)
-    print(user)
-    return render_template('home.html')
+    return Response(generate_video(json_data), mimetype='multipart/x-mixed-replace;boundary=frame')
 
 
 @app.route("/")
@@ -246,9 +211,7 @@ def index():
 
 @app.route("/login", methods=["POST", "GET"])
 def login():
-    # form=LoginForm(request.form)
     unsuccessful = "Please check your credentials"
-    successful = "Login successful"
     if request.method == "POST":
         email = request.form['email']
         password = request.form['password']
@@ -257,26 +220,13 @@ def login():
             sign_user = auth.refresh(sign_user['refreshToken'])
             session['user'] = sign_user['idToken']
             user_data = firestore_db.collection('UserData').document(email).get().to_dict()
-            session['user_id']=user_data['email']
-           # all_user=firestore_db.collection('UserData').get().to_dict()
-           # print(all_user)
-            print(user_data)    # {email, user, ImageURL, enc_url}
+            session['user_id'] = user_data['email']
 
-            return render_template('verify.html' )
-
-            # new_url = ""
-            #
-            # # FACE VERIFICATION
-            #
-            # if face_verification(json_data=user_data, new_url=new_url):
-            #     return render_template("login.html", s=successful)
-            #     # return redirect(url_for('.video_feed', message=json_data))
-            # else:
-            #     return render_template('login.html', us=unsuccessful)
-            # # return render_template('login.html', s=successful)
+            return render_template('verify.html')
 
         except:
             return render_template("login.html", us=unsuccessful)
+
     return render_template('login.html')
 
 
@@ -287,9 +237,12 @@ def logout():
         return redirect(url_for('index'))
     return redirect(url_for('login'))
 
+
 @app.route("/register", methods=['POST', 'GET'])
 def register():
     unsuccessful = "Your confirm_password does not match with password"
+    wrong_email = "Email format is not satisfied "
+    weak_pass = "Password is too weak"
     successful = "SignUp successful"
     if request.method == "POST":
         name = request.form['name']
@@ -297,71 +250,70 @@ def register():
         password = request.form['password']
         confirm_password = request.form['confirm_password']
 
-        if password != confirm_password:  # or not check_email(email) or not check_pass(password):
+        if password != confirm_password:
             return render_template("register.html", us=unsuccessful)
+        elif not check_email(email):
+            return render_template("register.html", us=wrong_email)
+        elif not check_pass(password):
+            return render_template("register.html", us=weak_pass)
         else:
             try:
                 user = auth.create_user_with_email_and_password(email, password)
                 session['user'] = user['idToken']
-                #token = session['user']
-                #data = auth.get_account_info(token)
-                # json_data = {
-                #     'email': data['users'][0]['email'],
-                #     'ImageURL': '',
-                #     'user': name
-                # }
+
                 return render_template("capture.html", s=successful, username=name)
             except:
                 return render_template('register.html', un=unsuccessful)
 
     return render_template("register.html")
 
-@app.route("/chatroom/<string:email>", methods=['POST','GET'])
+
+@app.route("/chatroom/<string:email>", methods=['POST', 'GET'])
 def chatroom(email):
+    if not check_login():
+        return render_template("unauthorize.html")
+
     if 'user_id' in session:
         token = session['user']
         data = auth.get_account_info(token)
         my_email = data['users'][0]['email']
 
         session['receiver_id'] = email
-        to=email
-        receiver_data=firestore_db.collection('UserData').document(to).get()
-#        print(receiver_data.to_dict())
-        session['receiver_name']= receiver_data.to_dict()['user']
+        to = email
+        receiver_data = firestore_db.collection('UserData').document(to).get()
+        session['receiver_name'] = receiver_data.to_dict()['user']
 
+        if request.method == "POST":
+            txt_body = request.form['text_body']
 
-        if request.method=="POST":
-
-            txt_body=request.form['text_body']
-
-            tz_India = pytz.timezone('Asia/Kolkata') 
+            tz_India = pytz.timezone('Asia/Kolkata')
             datetime_India = datetime.now(tz_India)
-#           print("India time:", datetime_India.strftime("%Y-%m-%d %H:%M:%S"))
-            timestamp=datetime_India.strftime("%Y-%m-%d %H:%M:%S")
-        
-#           send the messages to receiver
-            msg ={ 'from' : my_email ,
-                   'Time':timestamp,
-                   'message': txt_body,
+            timestamp = datetime_India.strftime("%Y-%m-%d %H:%M:%S")
+
+            message = do_encrypt(message=txt_body)
+
+            msg = {'from': my_email,
+                   'Time': timestamp,
+                   'message': message,
                    'to': email
-                }
+                   }
             firestore_db.collection('messages').add(msg)
 
-#       get all user 
-
-        all_user=firestore_db.collection('UserData').get()
-        users=[]
+        all_user = firestore_db.collection('UserData').get()
+        users = []
         for i in all_user:
-            users.append( {'user': i.to_dict()['user'] , 'email': i.to_dict()['email'] })
-#       print(users)    
-        return render_template("chats_room.html",users=users)
+            users.append({'user': i.to_dict()['user'], 'email': i.to_dict()['email']})
 
-    return render_template("login.html")    
+        return render_template("chats_room.html", users=users)
 
+    return render_template("login.html")
 
 
 @app.route('/chats', methods=['GET', 'POST'])
 def chats():
+    if not check_login():
+        return render_template("unauthorize.html")
+
     if 'user_id' in session:
         to = session['receiver_id']
 
@@ -369,23 +321,26 @@ def chats():
         data = auth.get_account_info(token)
         my_email = data['users'][0]['email']
 
-        # Get the all messages
+        all_chats = firestore_db.collection('messages').get()
 
-        all_chats=firestore_db.collection('messages').get()
-
-        chats=[]
+        chat_list = []
         for i in all_chats:
-            if (i.to_dict()['to'] == to  and i.to_dict()['from']==my_email) or (i.to_dict()['from'] == to  and i.to_dict()['to']==my_email) :
-                chats.append(i.to_dict())
+            if (i.to_dict()['to'] == to and i.to_dict()['from'] == my_email) or (
+                    i.to_dict()['from'] == to and i.to_dict()['to'] == my_email):
+                try:
+                    decrypt_dict = i.to_dict()
+                    msg = do_decrypt(decrypt_dict['message'])
+                    decrypt_dict['message'] = msg
+                    chat_list.append(decrypt_dict)
+                except:
+                    chat_list.append(i.to_dict())
 
-        chats=sorted(chats, key = lambda x: datetime.strptime(x['Time'], "%Y-%m-%d %H:%M:%S"))
-#       print(chats)
+        chat_list = sorted(chat_list, key=lambda x: datetime.strptime(x['Time'], "%Y-%m-%d %H:%M:%S"))
 
-        return render_template('chats.html', chats=chats, my_email=my_email )
-    return redirect(url_for('login')) 
+        return render_template('chats.html', chats=chat_list, my_email=my_email)
+    return redirect(url_for('login'))
+
 
 if __name__ == "__main__":
+    app.secret_key = 'A0Zr98j/3yX R~XHH!jmN]LWX/,?RT'
     app.run(debug=True)
-
-
-
