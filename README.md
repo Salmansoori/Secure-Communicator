@@ -11,3 +11,15 @@ Download mini-conda and use conda environment for easy installation<br/>
 pip install opencv-python<br/>
 conda install -c conda-forge dlib<br/>
 pip install face_recognition<br/>
+
+
+# First server setup 
+FLASK_APP=app.py 
+*** Create new conda environment ***
+conda create --name secure python=3
+conda activate secure   (else bydefault set the:: env export FLASK_ENV=development)
+
+# Run Command
+flask run --host=ec2-3-137-222-118.us-east-2.compute.amazonaws.com --port=8080 --debug=True
+*** In Debug Mode ***
+FLASK_DEBUG=1 flask run --host=ec2-3-137-222-118.us-east-2.compute.amazonaws.com --port=8080
