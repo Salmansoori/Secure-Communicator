@@ -66,17 +66,24 @@ def face_verification(json_data, new_url):
         return False
 
 
-@app.route('/verification')
+@app.route('/verification', methods=["POST","GET"])
 def verification():
     token = session['user']
     data = auth.get_account_info(token)
     email = data['users'][0]['email']
-
     user_data = firestore_db.collection('UserData').document(email).get().to_dict()
 
-    return Response(generate(user_data), mimetype='multipart/x-mixed-replace;boundary=frame')
+    img = request.files['image'].read()
+    file_name = str(user_data['email']) + '.jpg'
+    f = open(file_name, 'wb')
+    f.write(img)
+    f.close()
 
+    return upload_temp(file_name, user_data)
 
+   # return Response(generate(user_data), mimetype='multipart/x-mixed-replace;boundary=frame')
+
+'''
 def generate(json_data):
     i = 0
     video = cv2.VideoCapture(0)
@@ -94,7 +101,7 @@ def generate(json_data):
             cv2.imwrite(file_name, image)
 
             return upload_temp(file_name, json_data)
-
+'''
 
 def upload_temp(file_name, json_data):
     global verified
@@ -105,7 +112,7 @@ def upload_temp(file_name, json_data):
     new_url = blob.public_url
     verified = face_verification(json_data, new_url)
     print(verified)
-    return verified
+    return redirect(url_for('profile'))
 
 
 @app.route("/profile")
@@ -163,9 +170,9 @@ def update_database(json_data):
 
     print("Registration Successful")
 
-    return 0
+    return redirect(url_for('index'))
 
-
+'''
 def generate_video(json_data):
     i = 0
     video = cv2.VideoCapture(0)
@@ -182,8 +189,7 @@ def generate_video(json_data):
             cv2.destroyAllWindows()
             cv2.imwrite(file_name, image)
 
-            return upload(file_name, json_data)
-
+            return upload(file_name, json_data)    
 
 @app.route('/videocamera')
 def video_feed():
@@ -199,6 +205,30 @@ def video_feed():
         'user': name,
     }
     return Response(generate_video(json_data), mimetype='multipart/x-mixed-replace;boundary=frame')
+'''
+
+@app.route("/get_image", methods=['POST','GET'])
+def get_image():
+    token = session['user']
+    data = auth.get_account_info(token)
+    name = session['user_name']
+
+    json_data = {
+        'email': data['users'][0]['email'],
+        'ImageURL': '',
+        'user': name ,
+    }
+ 
+
+    img = request.files['image'].read()
+    file_name = str(json_data['email']) + '.jpg'
+    f = open(file_name, 'wb')
+    f.write(img)
+    f.close()
+
+    return upload(file_name,json_data)
+    
+    
 
 
 @app.route("/")
@@ -262,8 +292,9 @@ def register():
             try:
                 user = auth.create_user_with_email_and_password(email, password)
                 session['user'] = user['idToken']
+                session['user_name'] = name
 
-                return render_template("capture.html", s=successful, username=name)
+                return render_template("camera.html", s=successful, username=name)
             except:
                 return render_template('register.html', un=unsuccessful)
 
@@ -341,6 +372,7 @@ def chats():
 
         return render_template('chats.html', chats=chat_list, my_email=my_email)
     return redirect(url_for('login'))
+
 
 
 if __name__ == "__main__":
