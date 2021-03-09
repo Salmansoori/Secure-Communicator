@@ -7,7 +7,7 @@
         <div id ="frame">
                 <div id ="face-input"></div>
                     <video id="myVideo"  autoplay></video>
-                <button id="button" class="btn btn-success" style="vertical-align:middle"> capture and save  </button>
+                <button id="button" class="btn btn-success" style="vertical-align:middle"> click here to verify  </button>
         </div>
 
 
@@ -28,7 +28,7 @@
             formdata.append("image", file);
 
             let xhr = new XMLHttpRequest();
-            xhr.open('POST', 'http://3.15.34.218:8080/get_image', true);
+            xhr.open('POST', 'http://3.15.34.218:8080/verification', true);
             xhr.onload = function () {
                 if (this.status === 200) {
                     var data = JSON.parse(this.responseText);
