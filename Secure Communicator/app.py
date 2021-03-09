@@ -1,11 +1,12 @@
 import numpy as np
-from flask import Flask, render_template, redirect, request, url_for, Response, session
+from flask import Flask, render_template, redirect, request, url_for, Response, session, jsonify, make_response
 import pyrebase
 from user_input_filter import *
 from encryption import do_encrypt, do_decrypt
 import requests
 from datetime import datetime
 import pytz
+import json
 import cv2
 import face_recognition
 import pickle
@@ -26,7 +27,7 @@ firebase = pyrebase.initialize_app(config)
 db = firebase.database()
 auth = firebase.auth()
 
-cred = credentials.Certificate(r'C:\Users\ASUS\Desktop\Secure-Communicator\Secure Communicator\secret_key.json')
+cred = credentials.Certificate(r'secret_key.json')
 firebase_admin.initialize_app(cred, {
     'storageBucket': 'encryp-chat-8568c.appspot.com'
 })
@@ -36,6 +37,110 @@ bucket = storage.bucket()
 
 video = cv2.VideoCapture(0)
 app = Flask(__name__)
+
+###############    API CALL SECTION FOR ANDROID #####################
+#****************************************************************************
+
+@app.route('/api/user/encrypt', methods=['POST'])
+def enc():
+    content = request.data.decode('utf-8')
+    body = json.loads(content)
+    msg = str(body['message'])
+
+    enc = do_encrypt(msg)
+    data = {
+	"message":str(enc)
+    }
+
+    return make_response(jsonify(data), 200)
+
+
+@app.route('/api/user/decrypt', methods=['POST'])
+def dec():
+    content = request.data.decode('utf-8')
+    body = json.loads(content)
+
+    try:
+        msg = body['message'].split("'")[1]
+        dec = do_decrypt(msg)
+        data = {
+            "message":str(dec)
+        }
+        return make_response(jsonify(data), 200)
+
+    except:
+        data = {
+	       "message":"could not decrypt"
+	    }
+        return make_response(jsonify(data), 200)
+
+
+@app.route('/api/user/register', methods = ['POST'])
+def app_register():
+    content =  request.data.decode('utf-8')
+    body = json.loads(content)
+    data = {
+            "status": "unsuccessful"
+        }
+
+    try:
+        email = body['email']
+        user = body['user']
+        ImageURL = body['Url']
+        json_data = {
+            "email": email,
+            "user": user,
+            "ImageURL": ImageURL
+        }
+
+        if not update_database(json_data):
+            data['status'] =  "successful"
+            # res = make_response(jsonify(data), 200)
+            # res.headers['Access-Control-Allow-Origin'] = '*'
+            return make_response(jsonify(data), 200)
+        else:
+            return make_response(jsonify(data), 200)
+
+    except KeyError:
+        data ["status"] = "Improper details provided"
+        return make_response(jsonify(data), 200)
+
+
+@app.route('/api/user/login', methods = ['POST'])
+def app_login():
+    content =  request.data.decode('utf-8')
+    body = json.loads(content)
+
+    data = {
+        "status": "unsuccessful",
+    }
+
+    try:
+        email = body['email']
+        temp_url = body['temp_url']
+        json_data = firestore_db.collection('UserData').document(email).get().to_dict()
+        try:
+            verified = face_verification(json_data, temp_url)
+
+            if not verified:
+                return make_response(jsonify(data), 200)
+
+            data["status"] = "successful"
+            return make_response(jsonify(data), 200)
+
+        except (KeyError, IndexError):
+            data["status"] = "Improper details provided"
+            return make_response(jsonify(data), 200)
+
+    except KeyError:
+        data["status"] = "Improper details provided"
+        return make_response(jsonify(data), 200)
+
+
+
+
+#****************************************************************************#
+
 
 verified = False
 
@@ -62,7 +167,7 @@ def face_verification(json_data, new_url):
         encodings = face_recognition.face_encodings(rgb)[0]
         matches = face_recognition.compare_faces(data, encodings)
         return matches[0]
-    except KeyError:
+    except (KeyError, IndexError):
         return False
 
 
@@ -74,6 +179,7 @@ def verification():
     user_data = firestore_db.collection('UserData').document(email).get().to_dict()
 
     img = request.files['image'].read()
+    # CHANGE TO TEMP.JPG
     file_name = str(user_data['email']) + '.jpg'
     f = open(file_name, 'wb')
     f.write(img)
@@ -83,25 +189,6 @@ def verification():
 
    # return Response(generate(user_data), mimetype='multipart/x-mixed-replace;boundary=frame')
 
-'''
-def generate(json_data):
-    i = 0
-    video = cv2.VideoCapture(0)
-    file_name = str(json_data['email']) + 'temp.jpg'
-    while True:
-        i += 1
-        success, image = video.read()
-        ret, jpeg = cv2.imencode('.jpg', image)
-        frame = jpeg.tobytes()
-        yield (b'--frame\r\n'
-               b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n\r\n')
-        if i >= 80:
-            video.release()
-            cv2.destroyAllWindows()
-            cv2.imwrite(file_name, image)
-
-            return upload_temp(file_name, json_data)
-'''
 
 def upload_temp(file_name, json_data):
     global verified
@@ -110,8 +197,12 @@ def upload_temp(file_name, json_data):
     blob.make_public()
 
     new_url = blob.public_url
-    verified = face_verification(json_data, new_url)
-    print(verified)
+    try:
+        verified = face_verification(json_data, new_url)
+    except (KeyError, IndexError):
+        return render_template("unauthorize.html")
+
+    # print(verified)
     return redirect(url_for('profile'))
 
 
@@ -168,44 +259,11 @@ def update_database(json_data):
     json_data['enc_url'] = blob.public_url
     firestore_db.collection(u'UserData').document(json_data['email']).set(json_data)
 
-    print("Registration Successful")
+    # print("Registration Successful")
 
     return redirect(url_for('index'))
 
-'''
-def generate_video(json_data):
-    i = 0
-    video = cv2.VideoCapture(0)
-    file_name = str(json_data['email']) + '.jpg'
-    while True:
-        i += 1
-        success, image = video.read()
-        ret, jpeg = cv2.imencode('.jpg', image)
-        frame = jpeg.tobytes()
-        yield (b'--frame\r\n'
-               b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n\r\n')
-        if i >= 80:
-            video.release()
-            cv2.destroyAllWindows()
-            cv2.imwrite(file_name, image)
 
-            return upload(file_name, json_data)    
-
-@app.route('/videocamera')
-def video_feed():
-    try:
-        name = request.args['username']
-        token = session['user']
-    except KeyError:
-        return render_template('unauthorize.html')
-    data = auth.get_account_info(token)
-    json_data = {
-        'email': data['users'][0]['email'],
-        'ImageURL': '',
-        'user': name,
-    }
-    return Response(generate_video(json_data), mimetype='multipart/x-mixed-replace;boundary=frame')
-'''
 
 @app.route("/get_image", methods=['POST','GET'])
 def get_image():
@@ -218,7 +276,7 @@ def get_image():
         'ImageURL': '',
         'user': name ,
     }
- 
+
 
     img = request.files['image'].read()
     file_name = str(json_data['email']) + '.jpg'
@@ -227,8 +285,8 @@ def get_image():
     f.close()
 
     return upload(file_name,json_data)
-    
-    
+
+
 
 
 @app.route("/")
@@ -377,4 +435,4 @@ def chats():
 
 if __name__ == "__main__":
     app.secret_key = 'A0Zr98j/3yX R~XHH!jmN]LWX/,?RT'
-    app.run(debug=True)
+    app.run(host='ec2-3-15-34-218.us-east-2.compute.amazonaws.com', port='8080',debug=True)
