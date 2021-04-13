@@ -49,7 +49,7 @@ def enc():
 
     enc = do_encrypt(msg)
     data = {
-	"message":str(enc)
+        "message":str(enc)
     }
 
     return make_response(jsonify(data), 200)
@@ -70,8 +70,8 @@ def dec():
 
     except:
         data = {
-	       "message":"could not decrypt"
-	    }
+               "message":"could not decrypt"
+            }
         return make_response(jsonify(data), 200)
 
 
@@ -93,10 +93,11 @@ def app_register():
             "ImageURL": ImageURL
         }
 
-        if not update_database(json_data):
+        if update_db_app(json_data):
             data['status'] =  "successful"
             # res = make_response(jsonify(data), 200)
             # res.headers['Access-Control-Allow-Origin'] = '*'
+            print(data)
             return make_response(jsonify(data), 200)
         else:
             return make_response(jsonify(data), 200)
@@ -104,6 +105,26 @@ def app_register():
     except KeyError:
         data ["status"] = "Improper details provided"
         return make_response(jsonify(data), 200)
+
+
+def update_db_app(json_data):
+    enc_data = face_encoding_update(json_data['ImageURL'])
+    file_name = str(json_data['email']) + ".txt"
+    f = open(file_name, "wb")
+    f.write(pickle.dumps(enc_data))
+    f.close()
+
+    blob = bucket.blob(file_name)
+    blob.upload_from_filename(file_name)
+    blob.make_public()
+
+    json_data['enc_url'] = blob.public_url
+    try:
+        firestore_db.collection(u'UserData').document(json_data['email']).set(json_data)
+        return True
+    except:
+        return False
+
 
 
 @app.route('/api/user/login', methods = ['POST'])
@@ -135,8 +156,6 @@ def app_login():
     except KeyError:
         data["status"] = "Improper details provided"
         return make_response(jsonify(data), 200)
-
-
 
 
 #****************************************************************************#
