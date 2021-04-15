@@ -16,7 +16,7 @@ certifi==2020.12.5
 cffi==1.14.4
 chardet==4.0.0
 click==7.1.2
-dlib @ file:///D:/bld/dlib_1607165191327/work
+#dlib @ file:///D:/bld/dlib_1607165191327/work
 face-recognition==1.3.0
 face-recognition-models==0.3.0
 firebase-admin==4.5.1
@@ -41,7 +41,7 @@ Jinja2==2.11.2
 jws==0.1.3
 MarkupSafe==1.1.1
 msgpack==1.0.2
-numpy @ file:///D:/bld/numpy_1610324782150/work
+#numpy @ file:///D:/bld/numpy_1610324782150/work
 oauth2client==4.1.3
 opencv-python==4.5.1.48
 Pillow==8.1.0
