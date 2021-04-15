@@ -20,6 +20,12 @@ conda create --name secure python=3
 conda activate secure   (else bydefault set the:: env export FLASK_ENV=development)
 
 # Run Command
-flask run --host=ec2-3-137-222-118.us-east-2.compute.amazonaws.com --port=8080 --debug=True
+python app.py
+
+
+#If need to run using flask else try to avoid this path.
+
+
+flask run --host=ec2-3-137-222-118.us-east-2.compute.amazonaws.com --port=8080 
 *** In Debug Mode ***
 FLASK_DEBUG=1 flask run --host=ec2-3-137-222-118.us-east-2.compute.amazonaws.com --port=8080
