@@ -454,4 +454,4 @@ def chats():
 
 if __name__ == "__main__":
     app.secret_key = 'A0Zr98j/3yX R~XHH!jmN]LWX/,?RT'
-    app.run(host='ec2-3-15-34-218.us-east-2.compute.amazonaws.com', port='8080',debug=True)
+    app.run(host='127.0.0.1', port='8080',debug=True)
