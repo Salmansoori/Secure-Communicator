@@ -28,7 +28,7 @@
             formdata.append("image", file);
 
             let xhr = new XMLHttpRequest();
-            xhr.open('POST', 'http://3.15.34.218:8080/verification', true);
+            xhr.open('POST', 'http://127.0.0.1:8080/verification', true);
             xhr.onload = function () {
                 if (this.status === 200) {
                     var data = JSON.parse(this.responseText);
