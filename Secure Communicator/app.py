@@ -9,26 +9,17 @@ from backend import *
 import firebase_admin
 from firebase_admin import credentials, firestore, storage
 
-# config = {
-#   "apiKey": "secret key",
-#   "authDomain": " ",
-#   "databaseURL": " ",
-#   "projectId": " ",
-#   "storageBucket": " ",
-#   "messagingSenderId": " ",
-#   "appId": " ",
-#   "measurementId": " "
-# }
+ config = {
+   "apiKey": "secret key",
+   "authDomain": " ",
+   "databaseURL": " ",
+   "projectId": " ",
+   "storageBucket": " ",
+   "messagingSenderId": " ",
+   "appId": " ",
+   "measurementId": " "
+ }
 
-config = {
-    "apiKey": "AIzaSyAC8zIhZqHSkWaMOBqOXNopxdS4cP9WXh0",
-    "authDomain": "encryp-chat-8568c.firebaseapp.com",
-    "databaseURL": "https://encryp-chat-8568c-default-rtdb.firebaseio.com/",
-    "projectId": "encryp-chat-8568c",
-    "storageBucket": "encryp-chat-8568c.appspot.com",
-    "messagingSenderId": "957818347815",
-    "appId": "1:957818347815:web:8c6e4bb000a52b78af4902"
-}
 
 firebase = pyrebase.initialize_app(config)
 db = firebase.database()
@@ -36,7 +27,7 @@ auth = firebase.auth()
 
 cred = credentials.Certificate(r'C:\Users\ASUS\Desktop\Secure-Communicator\Secure Communicator\secret_key.json')
 firebase_admin.initialize_app(cred, {
-    'storageBucket': 'encryp-chat-8568c.appspot.com'
+    'storageBucket': 'your storage bucket'
 })
 
 firestore_db = firestore.client()
@@ -292,5 +283,5 @@ def register():
 
 
 if __name__ == "__main__":
-    app.secret_key = 'A0Zr98j/3yX R~XHH!jmN]LWX/,?RT'
+    app.secret_key = 'whyruhereagain'
     app.run(debug=True, port=5000)
