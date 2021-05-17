@@ -14,13 +14,13 @@ import firebase_admin
 from firebase_admin import credentials, firestore, storage
 
 config = {
-    "apiKey": "AIzaSyAC8zIhZqHSkWaMOBqOXNopxdS4cP9WXh0",
-    "authDomain": "encryp-chat-8568c.firebaseapp.com",
-    "databaseURL": "https://encryp-chat-8568c-default-rtdb.firebaseio.com/",
-    "projectId": "encryp-chat-8568c",
-    "storageBucket": "encryp-chat-8568c.appspot.com",
-    "messagingSenderId": "957818347815",
-    "appId": "1:957818347815:web:8c6e4bb000a52b78af4902"
+    "apiKey": "your secret api key",
+    "authDomain": "your auth domain",
+    "databaseURL": "your database url ",
+    "projectId": "your project id",
+    "storageBucket": "",
+    "messagingSenderId": "your messagingsenderid",
+    "appId": "your api id"
 }
 
 firebase = pyrebase.initialize_app(config)
@@ -29,7 +29,7 @@ auth = firebase.auth()
 
 cred = credentials.Certificate(r'secret_key.json')
 firebase_admin.initialize_app(cred, {
-    'storageBucket': 'encryp-chat-8568c.appspot.com'
+    'storageBucket': 'your storage bucket details'
 })
 
 firestore_db = firestore.client()
@@ -453,5 +453,5 @@ def chats():
 
 
 if __name__ == "__main__":
-    app.secret_key = 'A0Zr98j/3yX R~XHH!jmN]LWX/,?RT'
+    app.secret_key = 'whyareuhere'
     app.run(host='127.0.0.1', port='8080',debug=True)
