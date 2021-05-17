@@ -27,7 +27,7 @@ firebase = pyrebase.initialize_app(config)
 db = firebase.database()
 auth = firebase.auth()
 
-cred = credentials.Certificate(r'secret_key.json')
+cred = credentials.Certificate(r'your secretjson key path')
 firebase_admin.initialize_app(cred, {
     'storageBucket': 'your storage bucket details'
 })
